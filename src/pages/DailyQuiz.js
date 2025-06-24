@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const sampleQuestions = [
   {
@@ -23,12 +23,41 @@ const DailyQuiz = () => {
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [xp, setXp] = useState(0);
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    // Load XP and streak from localStorage
+    const storedXp = parseInt(localStorage.getItem('xp')) || 0;
+    const storedStreak = parseInt(localStorage.getItem('streak')) || 0;
+    const lastPlayed = localStorage.getItem('lastPlayed');
+
+    const today = new Date().toDateString();
+    if (lastPlayed !== today) {
+      if (lastPlayed === new Date(Date.now() - 86400000).toDateString()) {
+        setStreak(storedStreak + 1); // continued streak
+        localStorage.setItem('streak', storedStreak + 1);
+      } else {
+        setStreak(1); // reset streak
+        localStorage.setItem('streak', 1);
+      }
+      localStorage.setItem('lastPlayed', today);
+    } else {
+      setStreak(storedStreak);
+    }
+
+    setXp(storedXp);
+  }, []);
 
   const handleOptionClick = (index) => {
     setSelected(index);
+    let gainedXp = xp;
 
     if (index === sampleQuestions[current].correct) {
       setScore(score + 1);
+      gainedXp += 10;
+      setXp(gainedXp);
+      localStorage.setItem('xp', gainedXp);
     }
 
     setTimeout(() => {
@@ -46,6 +75,8 @@ const DailyQuiz = () => {
       <div style={{ textAlign: 'center', marginTop: '50px' }}>
         <h2>🎉 Quiz Finished!</h2>
         <p>Your Score: {score} / {sampleQuestions.length}</p>
+        <p>🧠 Total XP: {xp}</p>
+        <p>🔥 Current Streak: {streak} day(s)</p>
       </div>
     );
   }
