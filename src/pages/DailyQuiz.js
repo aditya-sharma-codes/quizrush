@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase-config';
 
 const sampleQuestions = [
   {
@@ -31,22 +33,23 @@ const DailyQuiz = () => {
     const storedXp = parseInt(localStorage.getItem('xp')) || 0;
     const storedStreak = parseInt(localStorage.getItem('streak')) || 0;
     const lastPlayed = localStorage.getItem('lastPlayed');
-
     const today = new Date().toDateString();
+
+    let updatedStreak = storedStreak;
+
     if (lastPlayed !== today) {
-      if (lastPlayed === new Date(Date.now() - 86400000).toDateString()) {
-        setStreak(storedStreak + 1); // continued streak
-        localStorage.setItem('streak', storedStreak + 1);
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (lastPlayed === yesterday) {
+        updatedStreak += 1;
       } else {
-        setStreak(1); // reset streak
-        localStorage.setItem('streak', 1);
+        updatedStreak = 1;
       }
       localStorage.setItem('lastPlayed', today);
-    } else {
-      setStreak(storedStreak);
+      localStorage.setItem('streak', updatedStreak);
     }
 
     setXp(storedXp);
+    setStreak(updatedStreak);
   }, []);
 
   const handleOptionClick = (index) => {
@@ -66,8 +69,30 @@ const DailyQuiz = () => {
         setSelected(null);
       } else {
         setShowResult(true);
+        updateUserInFirestore(gainedXp);
       }
     }, 800);
+  };
+
+  const updateUserInFirestore = async (finalXp) => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const today = new Date().toDateString();
+
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      try {
+        await setDoc(userRef, {
+          name: user.name,
+          email: user.email,
+          photo: user.photo,
+          xp: finalXp,
+          streak: streak,
+          lastPlayed: today
+        }, { merge: true });
+      } catch (err) {
+        console.error("Error updating Firestore:", err);
+      }
+    }
   };
 
   if (showResult) {
