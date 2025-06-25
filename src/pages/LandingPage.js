@@ -18,6 +18,10 @@ const LandingPage = () => {
         <Link to="/login">
           <button className="login-button">🔐 Login</button>
         </Link>
+        <Link to="/createroom">
+           <button className="custom-room-button">🛡️ Create Custom Room</button>
+        </Link>
+        
       </div>
     </div>
   );
