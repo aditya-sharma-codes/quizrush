@@ -37,7 +37,20 @@ const Leaderboard = () => {
             <tr key={index} style={{ borderBottom: '1px solid #ccc' }}>
               <td><b>{index + 1}</b></td>
               <td>
-                <img src={user.photo} alt="avatar" style={{ width: 40, height: 40, borderRadius: '50%' }} />
+                <img
+                  src={user.photo || 'https://via.placeholder.com/40'}
+                  alt="avatar"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/40';
+                  }}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                  }}
+                />
               </td>
               <td>{user.name}</td>
               <td>{user.xp}</td>
