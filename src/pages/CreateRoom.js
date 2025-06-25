@@ -29,7 +29,7 @@ const CreateRoom = () => {
           uid: user.uid,
           name: user.name,
           photo: user.photo,
-          score: 0,
+          score: null,
           status: 'waiting',
         },
       ],

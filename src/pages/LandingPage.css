@@ -27,4 +27,20 @@
     background-color: #28a745;
     color: white;
   }
+  .custom-room-button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    background-color: #6c5ce7;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .custom-room-button:hover {
+    background-color: #5e50d6;
+  }
+  body {
+    transition: background 1s ease, color 1s ease;
+  }
+  
   

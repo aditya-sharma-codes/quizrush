@@ -20,6 +20,7 @@ const RoomArena = () => {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [allFinished, setAllFinished] = useState(false);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -28,17 +29,17 @@ const RoomArena = () => {
     const roomRef = doc(db, 'rooms', code);
     const unsubscribe = onSnapshot(roomRef, (snapshot) => {
       const data = snapshot.data();
-
-      if (!data) {
-        console.warn("Room data not yet available");
-        setLoading(true);
-        return;
-      }
+      if (!data) return;
 
       setRoomData(data);
       if (data.status === 'started') {
         setQuizStarted(true);
       }
+
+      // Check if all players have finished
+      const allDone = data.players.every(p => p.status === 'finished');
+      setAllFinished(allDone);
+
       setLoading(false);
     });
 
@@ -49,6 +50,18 @@ const RoomArena = () => {
     await updateDoc(doc(db, 'rooms', code), {
       status: 'started',
     });
+  };
+
+  const markPlayerFinished = async (finalScore) => {
+    const roomRef = doc(db, 'rooms', code);
+    const snapshot = await getDoc(roomRef);
+    const data = snapshot.data();
+
+    const updatedPlayers = data.players.map(p =>
+      p.uid === user.uid ? { ...p, score: finalScore, status: 'finished' } : p
+    );
+
+    await updateDoc(roomRef, { players: updatedPlayers });
   };
 
   const handleAnswer = async (index) => {
@@ -63,14 +76,13 @@ const RoomArena = () => {
         setSelected(null);
       } else {
         setFinished(true);
-        const updatedPlayers = roomData.players.map(p =>
-          p.uid === user.uid ? { ...p, score: newScore } : p
-        );
-        await updateDoc(doc(db, 'rooms', code), {
-          players: updatedPlayers,
-        });
+        await markPlayerFinished(newScore);
       }
     }, 1000);
+  };
+
+  const handlePlayAgain = () => {
+    navigate('/');
   };
 
   if (loading || !roomData) return <p>Loading room...</p>;
@@ -95,6 +107,40 @@ const RoomArena = () => {
         ) : (
           <p>Waiting for host to start the battle...</p>
         )}
+      </div>
+    );
+  }
+
+  if (finished && allFinished) {
+    const sortedPlayers = [...roomData.players].sort((a, b) => b.score - a.score);
+
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <h2>🏆 Battle Result</h2>
+        <table style={{ margin: 'auto', borderCollapse: 'collapse', marginTop: '20px' }}>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedPlayers.map((player, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #ccc' }}>
+                <td><b>{i + 1}</b></td>
+                <td>
+                  <img src={player.photo} alt="avatar" style={{ width: 30, borderRadius: '50%', marginRight: 8 }} />
+                  {player.name}
+                </td>
+                <td>{player.score}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <button onClick={handlePlayAgain} style={{ marginTop: '20px', padding: '10px 20px' }}>
+          🔁 Play Again
+        </button>
       </div>
     );
   }
@@ -129,10 +175,7 @@ const RoomArena = () => {
           ))}
         </>
       ) : (
-        <div>
-          <h2>🎉 Quiz Finished!</h2>
-          <p>Your Score: {score} / {sampleQuestions.length}</p>
-        </div>
+        <p>Waiting for other players to finish...</p>
       )}
     </div>
   );
